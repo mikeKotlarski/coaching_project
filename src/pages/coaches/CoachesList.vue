@@ -1,12 +1,18 @@
 <template>
+  <base-dialog :show="!!error" @close="handleError">
+    <p> {{ error }}</p>
+  </base-dialog>
   <section>
     <coach-filter @change-filter="setFilter"></coach-filter>
   </section>
   <section>
     <base-card>
       <div class="controls">
-        <base-button mode="outline">Refresh</base-button>
+        <base-button mode="outline" @click="loadCoaches">Refresh</base-button>
         <base-button v-if="!isCoach" link to="/register">Register</base-button>
+      </div>
+      <div v-if="isLoading">
+        <base-spinner></base-spinner>
       </div>
       <ul v-if="hasCoaches">
         <coach-item
@@ -35,17 +41,36 @@ export default {
   },
   data() {
     return {
+      isLoading: false,
+      error: null,
       activeFilters: {
         cooking: true,
         photography: true,
         life: true,
+        
       },
+
     };
+  },
+  created() {
+    this.loadCoaches();
   },
   methods: {
     setFilter(updatedFilters) {
       this.activeFilters = updatedFilters;
     },
+    async loadCoaches() {
+      this.isLoading = true;
+      try {
+      await this.$store.dispatch('coaches/loadCoaches');
+      } catch(error) {
+        this.error = error.message || 'Error on Load!';
+      }
+      this.isLoading = false;
+    },
+    handleError() {
+      this.error = null;
+    }
   },
   computed: {
     filteredCoaches() {
@@ -66,7 +91,7 @@ export default {
       });
     },
     hasCoaches() {
-      return this.$store.getters['coaches/hasCoaches'];
+      return !this.isLoading && this.$store.getters['coaches/hasCoaches'];
     },
     isCoach() {
       return this.$store.getters['coaches/isCoach'];
